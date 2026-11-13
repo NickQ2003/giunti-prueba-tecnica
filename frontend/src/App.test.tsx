@@ -61,4 +61,16 @@ describe('procesamiento', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Procesar documento' }))
     expect(await screen.findByText(/No se pudieron localizar literalmente 2 enunciados/)).toBeInTheDocument()
   })
+
+  it('advierte cuando difieren las señales de idioma', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'X-Language-Disagreement': 'true' }),
+      json: async () => ({ titulo: 'Ejemplo', idioma: 'en', total_items: 1, items: [] }),
+    } as Response)
+    render(<App />)
+    fireEvent.change(screen.getByLabelText(/Archivo PDF/), { target: { files: [new File(['test'], 'ejemplo.docx')] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Procesar documento' }))
+    expect(await screen.findByText(/idioma detectado por la IA no coincide/)).toBeInTheDocument()
+  })
 })

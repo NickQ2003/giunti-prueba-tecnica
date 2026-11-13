@@ -9,6 +9,7 @@ export default function App() {
   const [error, setError] = useState('')
   const [requestId, setRequestId] = useState<string | null>(null)
   const [unmatchedStatements, setUnmatchedStatements] = useState(0)
+  const [languageDisagreement, setLanguageDisagreement] = useState(false)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -17,6 +18,7 @@ export default function App() {
     setRequestId(null)
     setResult(null)
     setUnmatchedStatements(0)
+    setLanguageDisagreement(false)
     if (!/\.(pdf|docx|xlsx)$/i.test(file.name)) {
       setError('Usa un archivo PDF, DOCX o XLSX.')
       return
@@ -30,6 +32,7 @@ export default function App() {
       const processed = await processFile(file)
       setResult(processed.questionnaire)
       setUnmatchedStatements(processed.unmatchedStatements)
+      setLanguageDisagreement(processed.languageDisagreement)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.')
       setRequestId(err instanceof ApiError ? err.requestId : null)
@@ -70,6 +73,7 @@ export default function App() {
       {result && <section className="card" aria-labelledby="result-title">
         <div className="result-header"><div><h2 id="result-title">Resultado</h2><p>{result.total_items} ítems · idioma: {result.idioma}</p></div><button type="button" onClick={download}>Descargar JSON</button></div>
         <p className="hint">Revisa el resultado antes de usarlo: la extracción automática puede cometer errores.</p>
+        {languageDisagreement && <p className="notice" role="status">El idioma detectado por la IA no coincide con la pista lingüística automática. Revisa el documento: ambas detecciones pueden equivocarse.</p>}
         {unmatchedStatements > 0 && <p className="notice" role="status">No se pudieron localizar literalmente {unmatchedStatements} enunciados en el texto extraído. Comprueba el documento original; los cambios de formato pueden afectar esta verificación.</p>}
         <pre><code>{JSON.stringify(result, null, 2)}</code></pre>
       </section>}
