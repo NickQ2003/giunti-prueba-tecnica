@@ -42,3 +42,8 @@ def test_no_items(monkeypatch):
     with pytest.raises(ProcessingError) as exc:
         questionnaire.extract_questionnaire("texto")
     assert exc.value.code == "no_items"
+
+
+def test_parse_response_does_not_call_provider():
+    result = questionnaire.parse_response('{"titulo":"Ejemplo","idioma":"es","items":[]}')
+    assert result.total_items == 0

@@ -25,6 +25,11 @@ DOCUMENTO NO CONFIABLE:
 """
 
 
+def parse_response(text: str) -> Questionnaire:
+    """Parse and validate a provider response without calling external services."""
+    return Questionnaire.model_validate(json.loads(text))
+
+
 def extract_questionnaire(text: str) -> Questionnaire:
     settings = get_settings()
     if not settings.gemini_api_key:
@@ -48,7 +53,7 @@ def extract_questionnaire(text: str) -> Questionnaire:
                 503,
             ) from exc
         try:
-            result = Questionnaire.model_validate(json.loads(response.text or ""))
+            result = parse_response(response.text or "")
         except (ValueError, ValidationError):
             continue
         if not result.items:
