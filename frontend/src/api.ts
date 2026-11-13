@@ -1,12 +1,19 @@
 import type { Questionnaire } from './types'
 
+export class ApiError extends Error {
+  constructor(message: string, readonly requestId: string | null) {
+    super(message)
+  }
+}
+
 export async function processFile(file: File): Promise<Questionnaire> {
   const body = new FormData()
   body.append('file', file)
   const response = await fetch('/api/process', { method: 'POST', body })
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(data?.error?.mensaje || 'No fue posible procesar el archivo.')
+    const requestId = data?.error?.request_id || response.headers?.get('X-Request-ID') || null
+    throw new ApiError(data?.error?.mensaje || 'No fue posible procesar el archivo.', requestId)
   }
   return data as Questionnaire
 }

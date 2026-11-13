@@ -22,11 +22,12 @@ describe('procesamiento', () => {
   it('muestra errores de la API', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
-      json: async () => ({ error: { mensaje: 'No se encontraron ítems.' } }),
+      json: async () => ({ error: { mensaje: 'No se encontraron ítems.', request_id: 'abc123' } }),
     } as Response)
     render(<App />)
     fireEvent.change(screen.getByLabelText(/Archivo PDF/), { target: { files: [new File(['test'], 'ejemplo.pdf')] } })
     fireEvent.click(screen.getByRole('button', { name: 'Procesar documento' }))
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se encontraron ítems.'))
+    expect(screen.getByRole('alert')).toHaveTextContent('Referencia: abc123')
   })
 })
