@@ -32,7 +32,7 @@ Abre <http://localhost:8000>. La interfaz y la API se sirven desde el mismo cont
 | Variable | Uso | Valor predeterminado |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | Clave de Google AI Studio. | Vacío; necesaria para procesar. |
-| `GEMINI_MODEL` | Modelo compatible con la API de Gemini. | `gemini-2.5-flash` |
+| `GEMINI_MODEL` | Modelo compatible con la API de Gemini. | `gemini-3.5-flash-lite` |
 | `PORT` | Puerto HTTP dentro del contenedor, normalmente asignado por el hosting. | `8000` |
 
 ## Desarrollo sin Docker
