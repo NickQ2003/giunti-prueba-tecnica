@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: giunti-questionnaires
+    runtime: docker
+    plan: free
+    autoDeploy: false
+    healthCheckPath: /api/health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash

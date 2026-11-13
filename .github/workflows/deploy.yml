@@ -1,0 +1,37 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    env:
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Skip when hosting is not configured
+        if: env.RENDER_DEPLOY_HOOK == ''
+        run: echo '::warning::Deploy omitido: configura RENDER_DEPLOY_HOOK.'
+      - name: Trigger Render deploy for current main
+        if: env.RENDER_DEPLOY_HOOK != ''
+        run: |
+          current=$(git ls-remote "https://github.com/${REPO}.git" refs/heads/main | cut -f1)
+          if [ "$current" != "$HEAD_SHA" ]; then
+            echo 'Se omite un CI anterior al último commit de main.'
+            exit 0
+          fi
+          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK" > /dev/null
+          echo 'Deploy solicitado. Comprueba su estado final en Render y verifica la URL pública.'
