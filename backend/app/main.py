@@ -36,7 +36,7 @@ async def trace_request(request: Request, call_next):
     request.state.error_code = None
     started = time.monotonic()
     try:
-        if request.method == "POST" and request.url.path == "/api/process":
+        if request.method == "POST" and request.url.path in ("/api/process", "/api/preview"):
             allowed, retry_after = limiter.allow()
         else:
             allowed, retry_after = True, 0
@@ -143,6 +143,20 @@ async def process(request: Request, response: Response, file: UploadFile = File(
             count_unmatched_statements(text, questionnaire)
         )
         return questionnaire
+    finally:
+        await file.close()
+
+
+@app.post("/api/preview")
+async def preview(request: Request, file: UploadFile = File(...)):
+    """Extract a bounded text preview without calling the model or storing the file."""
+    try:
+        request.state.stage = "file_validation"
+        extension, content = await read_upload(file)
+        request.state.stage = "text_extraction"
+        text = await run_in_threadpool(extract_text, extension, content)
+        limit = 40_000
+        return {"text": text[:limit], "truncated": len(text) > limit}
     finally:
         await file.close()
 

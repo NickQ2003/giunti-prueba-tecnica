@@ -24,3 +24,10 @@ def test_api_limit_ignores_spoofed_forwarded_ip(monkeypatch):
     assert response.json()["error"]["request_id"] == response.headers["X-Request-ID"]
     assert int(response.headers["Retry-After"]) > 0
     assert client.get("/api/health").status_code == 200
+
+
+def test_preview_and_processing_share_limit(monkeypatch):
+    monkeypatch.setattr("app.main.limiter", RateLimiter(1, 60))
+    client = TestClient(app)
+    assert client.post("/api/preview").status_code == 422
+    assert client.post("/api/process").status_code == 429

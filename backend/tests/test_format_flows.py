@@ -53,3 +53,18 @@ def test_format_to_api_with_mocked_model(monkeypatch, extension, language, quest
     assert response.status_code == 200
     assert response.json()["idioma"] == language
     assert response.json()["total_items"] == 1
+
+
+@pytest.mark.parametrize("extension", ["pdf", "docx", "xlsx"])
+def test_preview_extracts_without_calling_model(monkeypatch, extension):
+    def fail(_text):
+        raise AssertionError("preview must not call the model")
+
+    monkeypatch.setattr("app.main.extract_questionnaire", fail)
+    response = TestClient(app).post(
+        "/api/preview",
+        files={"file": (f"example.{extension}", make_file(extension, "1. Example question?"))},
+    )
+    assert response.status_code == 200
+    assert "Example question?" in response.json()["text"]
+    assert response.json()["truncated"] is False
