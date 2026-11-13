@@ -33,6 +33,7 @@ def test_success(monkeypatch):
     response = client.post("/api/process", files={"file": ("example.docx", document_bytes())})
     assert response.status_code == 200
     assert response.json()["total_items"] == 1
+    assert response.headers["X-Unmatched-Statements"] == "0"
 
 
 def test_invalid_file_does_not_call_provider(monkeypatch):

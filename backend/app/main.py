@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Request, UploadFile
+from fastapi import FastAPI, File, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -19,6 +19,7 @@ from app.services.extraction import extract_text
 from app.services.file_validation import read_upload
 from app.services.questionnaire import extract_questionnaire
 from app.services.rate_limit import RateLimiter
+from app.services.source_check import count_unmatched_statements
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -124,14 +125,18 @@ async def request_validation_error_handler(request: Request, exc: RequestValidat
 
 
 @app.post("/api/process", response_model=Questionnaire)
-async def process(request: Request, file: UploadFile = File(...)):
+async def process(request: Request, response: Response, file: UploadFile = File(...)):
     try:
         request.state.stage = "file_validation"
         extension, content = await read_upload(file)
         request.state.stage = "text_extraction"
         text = await run_in_threadpool(extract_text, extension, content)
         request.state.stage = "llm_processing"
-        return await run_in_threadpool(extract_questionnaire, text)
+        questionnaire = await run_in_threadpool(extract_questionnaire, text)
+        response.headers["X-Unmatched-Statements"] = str(
+            count_unmatched_statements(text, questionnaire)
+        )
+        return questionnaire
     finally:
         await file.close()
 
