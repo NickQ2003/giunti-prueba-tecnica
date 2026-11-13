@@ -30,4 +30,23 @@ describe('procesamiento', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se encontraron ítems.'))
     expect(screen.getByRole('alert')).toHaveTextContent('Referencia: abc123')
   })
+
+  it('descarga el JSON generado', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ titulo: 'Ejemplo', idioma: 'es', total_items: 0, items: [] }),
+    } as Response)
+    const createUrl = vi.fn(() => 'blob:test')
+    const revokeUrl = vi.fn()
+    vi.stubGlobal('URL', { createObjectURL: createUrl, revokeObjectURL: revokeUrl })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<App />)
+    fireEvent.change(screen.getByLabelText(/Archivo PDF/), { target: { files: [new File(['test'], 'ejemplo.docx')] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Procesar documento' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Descargar JSON' }))
+    expect(createUrl).toHaveBeenCalledWith(expect.any(Blob))
+    expect(click).toHaveBeenCalledOnce()
+    await waitFor(() => expect(revokeUrl).toHaveBeenCalledWith('blob:test'))
+    vi.unstubAllGlobals()
+  })
 })
