@@ -2,6 +2,7 @@ import json
 import logging
 from io import BytesIO
 
+import pytest
 from docx import Document
 from fastapi.testclient import TestClient
 
@@ -49,6 +50,21 @@ def test_invalid_file_does_not_call_provider(monkeypatch):
 def test_unsupported_format():
     response = client.post("/api/process", files={"file": ("bad.txt", b"test")})
     assert response.status_code == 415
+
+
+def test_preview_reports_truncation_without_using_model(monkeypatch):
+    monkeypatch.setattr("app.main.extract_text", lambda extension, content: "x" * 40_001)
+    monkeypatch.setattr("app.main.extract_questionnaire", lambda text: pytest.fail("model called"))
+    response = client.post("/api/preview", files={"file": ("example.docx", b"valid upload")})
+    assert response.status_code == 200
+    assert len(response.json()["text"]) == 40_000
+    assert response.json()["truncated"] is True
+
+
+def test_preview_rejects_corrupt_file():
+    response = client.post("/api/preview", files={"file": ("bad.docx", b"not a document")})
+    assert response.status_code == 422
+    assert response.json()["error"]["codigo"] == "invalid_document"
 
 
 def test_request_id_matches_error_and_cannot_be_supplied_by_client():
