@@ -69,6 +69,8 @@ async def trace_request(request: Request, call_next):
             },
         )
     response.headers["X-Request-ID"] = request.state.request_id
+    if request.url.path in ("/api/process", "/api/preview"):
+        response.headers["Cache-Control"] = "no-store"
     logger.info(
         json.dumps(
             {

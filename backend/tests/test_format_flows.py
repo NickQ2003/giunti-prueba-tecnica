@@ -68,3 +68,4 @@ def test_preview_extracts_without_calling_model(monkeypatch, extension):
     assert response.status_code == 200
     assert "Example question?" in response.json()["text"]
     assert response.json()["truncated"] is False
+    assert response.headers["Cache-Control"] == "no-store"
