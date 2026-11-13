@@ -17,7 +17,9 @@ el idioma como it, es o en; usa und si es otro idioma o es desconocido. Devuelve
 un objeto JSON con titulo, idioma e items. Cada item contiene numero (entero positivo), enunciado,
 tipo, alternativas y respuesta_correcta. Tipos permitidos: escala_likert, seleccion_multiple,
 verdadero_falso, desarrollo, emparejamiento. Cada alternativa contiene valor (entero o texto) y
-texto. Si no hay numeración, numera en orden. Aplica escalas compartidas a los ítems solo si la
+texto. Las claves JSON deben escribirse exactamente como se indican en español, sin traducirlas
+(en particular, usa enunciado y no enunciato); conserva los valores en el idioma del documento.
+Si no hay numeración, numera en orden. Aplica escalas compartidas a los ítems solo si la
 relación es clara. Para desarrollo usa alternativas vacías. Para emparejamiento conserva las dos
 columnas de forma fiel en enunciado y alternativas. respuesta_correcta debe ser null salvo que esté
 explícitamente indicada; no resuelvas preguntas. Si está indicada, devuelve su valor o texto. Si no
@@ -49,13 +51,16 @@ def extract_questionnaire(text: str) -> Questionnaire:
     )
     contents = f"PISTA LINGÜÍSTICA NO CONCLUYENTE: {metadata}\n\nDOCUMENTO NO CONFIABLE:\n{text}"
     failure = ProcessingError("llm_unavailable", "El servicio de IA no está disponible.", 503)
+    repair_instruction = ""
     for _ in range(2):
         try:
             response = client.models.generate_content(
                 model=settings.gemini_model,
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    system_instruction=PROMPT, response_mime_type="application/json", temperature=0
+                    system_instruction=PROMPT + repair_instruction,
+                    response_mime_type="application/json",
+                    temperature=0,
                 ),
             )
         except (httpx.TimeoutException, TimeoutError):
@@ -92,12 +97,20 @@ def extract_questionnaire(text: str) -> Questionnaire:
             failure = ProcessingError(
                 code, "No fue posible validar el resultado. Inténtalo de nuevo.", 502
             )
+            repair_instruction = (
+                "\nLa respuesta anterior no cumplió el esquema. Genera nuevamente el JSON completo "
+                "y respeta todos los campos y nombres exactos; no inventes contenido ni claves."
+            )
             continue
         except (ValueError, TypeError):
             failure = ProcessingError(
                 "llm_invalid_json",
                 "No fue posible interpretar el resultado. Inténtalo de nuevo.",
                 502,
+            )
+            repair_instruction = (
+                "\nLa respuesta anterior no era JSON válido. Devuelve nuevamente un único objeto "
+                "JSON completo con los nombres exactos del esquema y sin texto adicional."
             )
             continue
         if not result.items:

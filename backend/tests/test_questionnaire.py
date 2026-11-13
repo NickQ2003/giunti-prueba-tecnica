@@ -38,6 +38,36 @@ def test_invalid_json_retried(monkeypatch):
     assert exc.value.code == "llm_invalid_json"
 
 
+def test_retry_adds_schema_correction_without_echoing_previous_output(monkeypatch):
+    calls = []
+    responses = iter(
+        [
+            '{"titulo":"Ejemplo","idioma":"es","items":[{"numero":1}]}',
+            '{"titulo":"Ejemplo","idioma":"es","items":[{"numero":1,"enunciado":"Pregunta","tipo":"desarrollo","alternativas":[]}]}',
+        ]
+    )
+    monkeypatch.setattr(
+        questionnaire,
+        "get_settings",
+        lambda: SimpleNamespace(gemini_api_key="test", gemini_model="test"),
+    )
+
+    def generate(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(text=next(responses))
+
+    monkeypatch.setattr(
+        questionnaire.genai,
+        "Client",
+        lambda **kwargs: SimpleNamespace(models=SimpleNamespace(generate_content=generate)),
+    )
+    assert questionnaire.extract_questionnaire("documento inventado").total_items == 1
+    assert len(calls) == 2
+    assert "no cumplió el esquema" in calls[1]["config"].system_instruction
+    assert calls[0]["contents"] == calls[1]["contents"]
+    assert '{"numero":1}' not in calls[1]["config"].system_instruction
+
+
 def test_no_items(monkeypatch):
     configure(monkeypatch, iter(['{"titulo":"Ejemplo","idioma":"es","items":[]}']))
     with pytest.raises(ProcessingError) as exc:
