@@ -50,6 +50,37 @@ def test_parse_response_does_not_call_provider():
     assert result.total_items == 0
 
 
+def test_language_hint_is_sent_before_document_as_nonbinding_context(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        questionnaire,
+        "get_settings",
+        lambda: SimpleNamespace(gemini_api_key="test", gemini_model="test"),
+    )
+
+    def generate(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            text='{"titulo":"Ejemplo","idioma":"es","items":[{"numero":1,"enunciado":"Pregunta","tipo":"desarrollo","alternativas":[]}]}'
+        )
+
+    monkeypatch.setattr(
+        questionnaire.genai,
+        "Client",
+        lambda **kwargs: SimpleNamespace(models=SimpleNamespace(generate_content=generate)),
+    )
+    document = "Las personas describen la preocupación y la evaluación de su bienestar."
+    questionnaire.extract_questionnaire(document)
+    call = calls[0]
+    assert '"candidato": "es"' in call["contents"]
+    assert call["contents"].index("PISTA LINGÜÍSTICA") < call["contents"].index(
+        "DOCUMENTO NO CONFIABLE"
+    )
+    assert call["contents"].endswith(document)
+    assert "orientativa" in call["config"].system_instruction
+    assert document not in call["config"].system_instruction
+
+
 def test_timeout_has_bounded_retries(monkeypatch):
     attempts = []
     monkeypatch.setattr(
