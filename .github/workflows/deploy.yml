@@ -17,22 +17,34 @@ jobs:
   deploy:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
-      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
       HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
       REPO: ${{ github.repository }}
+      PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || 'https://giunti-questionnaires.onrender.com' }}
     steps:
-      - name: Skip when hosting is not configured
-        if: env.RENDER_DEPLOY_HOOK == ''
-        run: |
-          echo '::warning::Deploy omitido: configura RENDER_DEPLOY_HOOK.'
       - name: Trigger Render deploy for current main
-        if: env.RENDER_DEPLOY_HOOK != ''
+        id: trigger
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo '::error::Falta configurar RENDER_DEPLOY_HOOK.'
+            exit 1
+          fi
           current=$(git ls-remote "https://github.com/${REPO}.git" refs/heads/main | cut -f1)
           if [ "$current" != "$HEAD_SHA" ]; then
             echo 'Se omite un CI anterior al último commit de main.'
             exit 0
           fi
           curl --fail --silent --show-error --get --data-urlencode "ref=$HEAD_SHA" "$RENDER_DEPLOY_HOOK" > /dev/null
-          echo 'Deploy del commit validado solicitado. Comprueba su estado final en Render y verifica la URL pública.'
+          echo 'requested=true' >> "$GITHUB_OUTPUT"
+          echo 'Deploy solicitado; se comprobará la versión pública.'
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        if: steps.trigger.outputs.requested == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Verify revision and public endpoints
+        if: steps.trigger.outputs.requested == 'true'
+        run: python3 backend/app/deploy_verify.py
