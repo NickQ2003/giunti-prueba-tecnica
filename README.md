@@ -107,6 +107,8 @@ Las pruebas automatizadas simulan Gemini y no requieren clave ni consumen cuota.
 
 `examples/cuestionario_inventado.docx` contiene un cuestionario ficticio. `examples/cuestionario_inventado.expected.json` es una salida de referencia revisada; el modelo puede devolver una representación distinta. `examples/generate_example.py` permite recrear el DOCX usando `python-docx`.
 
+En [`examples/test_docs`](examples/test_docs/README.md) hay cinco cuestionarios inventados más complejos: PDF en inglés, DOCX en italiano, XLSX en español y dos casos bilingües. Su README explica las claves explícitas y los resultados observados sin presentarlos como garantizados.
+
 ## CI y despliegue
 
 GitHub Actions ejecuta lint, tests y build de frontend y backend en cada pull request y push a `main`; también audita las dependencias Python de producción y las dependencias npm con severidad alta o superior, construye la imagen y comprueba la interfaz y `/api/health` por HTTP. La auditoría npm puede informar hallazgos moderados que no bloquean el pipeline. No se necesitan secretos para CI.
