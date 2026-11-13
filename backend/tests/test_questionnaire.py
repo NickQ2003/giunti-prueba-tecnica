@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import httpx
 import pytest
 
 from app.errors import ProcessingError
@@ -34,7 +35,7 @@ def test_invalid_json_retried(monkeypatch):
     configure(monkeypatch, iter(["bad", "bad"]))
     with pytest.raises(ProcessingError) as exc:
         questionnaire.extract_questionnaire("texto")
-    assert exc.value.code == "invalid_response"
+    assert exc.value.code == "llm_invalid_json"
 
 
 def test_no_items(monkeypatch):
@@ -47,3 +48,34 @@ def test_no_items(monkeypatch):
 def test_parse_response_does_not_call_provider():
     result = questionnaire.parse_response('{"titulo":"Ejemplo","idioma":"es","items":[]}')
     assert result.total_items == 0
+
+
+def test_timeout_has_bounded_retries(monkeypatch):
+    attempts = []
+    monkeypatch.setattr(
+        questionnaire,
+        "get_settings",
+        lambda: SimpleNamespace(gemini_api_key="test", gemini_model="test"),
+    )
+
+    def timeout(**kwargs):
+        attempts.append(1)
+        raise httpx.ReadTimeout("sensitive provider detail")
+
+    monkeypatch.setattr(
+        questionnaire.genai,
+        "Client",
+        lambda **kwargs: SimpleNamespace(models=SimpleNamespace(generate_content=timeout)),
+    )
+    with pytest.raises(ProcessingError) as exc:
+        questionnaire.extract_questionnaire("secret text")
+    assert exc.value.code == "llm_timeout"
+    assert len(attempts) == 2
+    assert "secret" not in str(exc.value)
+
+
+def test_schema_failure_is_distinct(monkeypatch):
+    configure(monkeypatch, iter(['{"titulo":"Ejemplo","idioma":"xx","items":[]}'] * 2))
+    with pytest.raises(ProcessingError) as exc:
+        questionnaire.extract_questionnaire("texto")
+    assert exc.value.code == "llm_invalid_schema"
