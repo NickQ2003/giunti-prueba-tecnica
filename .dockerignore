@@ -9,4 +9,4 @@
 **/.pytest_cache
 **/.ruff_cache
 **/.venv
-docs/plan-de-commits.md
+docs/
