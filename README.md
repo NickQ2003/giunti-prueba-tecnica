@@ -12,9 +12,10 @@ Render Free suspende el servicio después de un periodo de inactividad; la prime
 - El texto extraído se envía a Google Gemini. Consulta las condiciones de uso y privacidad del proveedor antes de utilizarlo; no se garantiza retención cero.
 - El JSON requiere revisión humana: el modelo puede equivocarse o no detectar la estructura completa. El prompt indica que no invente contenido ni respuestas correctas, pero no puede garantizarlo.
 - Los PDF deben contener texto seleccionable: no hay OCR. Los archivos cifrados, corruptos o sin texto producen un error.
+- La vista previa de PDF se dibuja localmente en el navegador; la de DOCX y XLSX muestra texto extraído por el servidor, no una representación fiel del formato. La vista de texto se limita a 40.000 caracteres y lo indica cuando se recorta; el procesamiento posterior utiliza el texto completo dentro de los límites indicados abajo. No se consulta Gemini para la vista previa.
 - Límite de archivo: 10 MB; texto extraído: 100.000 caracteres; PDF: 200 páginas; Excel: 50.000 celdas; contenido ZIP descomprimido: 50 MB. XLSX usa valores calculados almacenados: las fórmulas sin valor guardado pueden quedar vacías.
 - La carga multipart es procesada por el servidor antes de la validación de tamaño del archivo. La aplicación no incorpora autenticación; para producción configura también límites de tamaño, tiempo y frecuencia en un proxy o plataforma.
-- El límite básico es global por proceso, no por usuario: 20 solicitudes de procesamiento cada 60 segundos por defecto. Se reinicia al reiniciar el servicio y no se comparte entre procesos; no evita abuso distribuido. No se confía en cabeceras de IP proporcionadas por el cliente.
+- El límite básico es global por proceso, no por usuario: 20 solicitudes compartidas entre vista previa y procesamiento cada 60 segundos por defecto. Se reinicia al reiniciar el servicio y no se comparte entre procesos; no evita abuso distribuido. No se confía en cabeceras de IP proporcionadas por el cliente.
 - El esquema original no define una estructura de pares para emparejamiento: las columnas se conservan, cuando es posible, en el enunciado y las alternativas. `respuesta_correcta` solo admite un entero, texto o `null`.
 
 ## Requisitos
@@ -67,6 +68,7 @@ Abre la URL mostrada por Vite. El servidor de desarrollo redirige `/api` a FastA
 
 - `GET /api/health`: salud del proceso, sin comprobar Gemini.
 - `GET /api/version`: SHA de Git informado por Render, o `null` fuera de Render.
+- `POST /api/preview`: recibe un archivo en `file` y devuelve una vista de texto limitada y un indicador `truncated`, sin llamar a Gemini.
 - `POST /api/process`: formulario `multipart/form-data` con campo `file`. Retorna directamente el cuestionario con `titulo`, `idioma`, `total_items` e `items`.
 - `GET /docs`: documentación interactiva de FastAPI.
 
