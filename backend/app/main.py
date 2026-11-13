@@ -10,15 +10,19 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.config import get_settings
 from app.errors import ProcessingError
 from app.schemas import Questionnaire
 from app.services.extraction import extract_text
 from app.services.file_validation import read_upload
 from app.services.questionnaire import extract_questionnaire
+from app.services.rate_limit import RateLimiter
 
 logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI(title="Cuestionarios API")
+settings = get_settings()
+limiter = RateLimiter(settings.rate_limit_requests, settings.rate_limit_window_seconds)
 
 
 @app.middleware("http")
@@ -28,7 +32,26 @@ async def trace_request(request: Request, call_next):
     request.state.error_code = None
     started = time.monotonic()
     try:
-        response = await call_next(request)
+        if request.method == "POST" and request.url.path == "/api/process":
+            allowed, retry_after = limiter.allow()
+        else:
+            allowed, retry_after = True, 0
+        if not allowed:
+            request.state.stage = "rate_limit"
+            request.state.error_code = "rate_limited"
+            response = JSONResponse(
+                status_code=429,
+                headers={"Retry-After": str(retry_after)},
+                content={
+                    "error": {
+                        "codigo": "rate_limited",
+                        "mensaje": "Demasiadas solicitudes. Inténtalo más tarde.",
+                        "request_id": request.state.request_id,
+                    }
+                },
+            )
+        else:
+            response = await call_next(request)
     except Exception:
         request.state.error_code = "internal_error"
         response = JSONResponse(
