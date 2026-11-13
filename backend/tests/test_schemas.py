@@ -40,3 +40,37 @@ def test_invalid_type_rejected():
             idioma="es",
             items=[{"numero": 1, "enunciado": "?", "tipo": "otro", "alternativas": []}],
         )
+
+
+def test_duplicate_numbers_rejected():
+    item = {"numero": 1, "enunciado": "Pregunta", "tipo": "desarrollo", "alternativas": []}
+    with pytest.raises(ValidationError):
+        Questionnaire(titulo="Ejemplo", idioma="es", items=[item, item])
+
+
+@pytest.mark.parametrize("language", ["xx", "esp", "  "])
+def test_unsupported_language_rejected(language):
+    with pytest.raises(ValidationError):
+        Questionnaire(titulo="Ejemplo", idioma=language, items=[])
+
+
+def test_duplicate_alternative_values_rejected():
+    item = {
+        "numero": 1,
+        "enunciado": "Pregunta",
+        "tipo": "seleccion_multiple",
+        "alternativas": [{"valor": "A", "texto": "Uno"}, {"valor": " a ", "texto": "Dos"}],
+    }
+    with pytest.raises(ValidationError):
+        Questionnaire(titulo="Ejemplo", idioma="es", items=[item])
+
+
+def test_open_ended_rejects_alternatives():
+    item = {
+        "numero": 1,
+        "enunciado": "Pregunta",
+        "tipo": "desarrollo",
+        "alternativas": [{"valor": "A", "texto": "Uno"}],
+    }
+    with pytest.raises(ValidationError):
+        Questionnaire(titulo="Ejemplo", idioma="es", items=[item])
