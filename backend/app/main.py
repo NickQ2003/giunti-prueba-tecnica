@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import re
 import time
 from pathlib import Path
 from uuid import uuid4
@@ -83,6 +85,12 @@ async def trace_request(request: Request, call_next):
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/version")
+def version():
+    revision = os.environ.get("RENDER_GIT_COMMIT", "")
+    return {"revision": revision.lower() if re.fullmatch(r"[a-fA-F0-9]{40}", revision) else None}
 
 
 @app.exception_handler(ProcessingError)
