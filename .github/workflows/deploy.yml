@@ -33,5 +33,5 @@ jobs:
             echo 'Se omite un CI anterior al último commit de main.'
             exit 0
           fi
-          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK" > /dev/null
-          echo 'Deploy solicitado. Comprueba su estado final en Render y verifica la URL pública.'
+          curl --fail --silent --show-error --get --data-urlencode "ref=$HEAD_SHA" "$RENDER_DEPLOY_HOOK" > /dev/null
+          echo 'Deploy del commit validado solicitado. Comprueba su estado final en Render y verifica la URL pública.'
