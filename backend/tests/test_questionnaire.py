@@ -79,3 +79,36 @@ def test_schema_failure_is_distinct(monkeypatch):
     with pytest.raises(ProcessingError) as exc:
         questionnaire.extract_questionnaire("texto")
     assert exc.value.code == "llm_invalid_schema"
+
+
+@pytest.mark.parametrize(
+    ("status", "expected", "attempts"),
+    [
+        (401, "llm_configuration_error", 1),
+        (404, "llm_configuration_error", 1),
+        (429, "llm_unavailable", 1),
+        (503, "llm_unavailable", 2),
+    ],
+)
+def test_provider_statuses_are_safe_and_bounded(monkeypatch, status, expected, attempts):
+    calls = []
+    monkeypatch.setattr(
+        questionnaire,
+        "get_settings",
+        lambda: SimpleNamespace(gemini_api_key="test", gemini_model="test"),
+    )
+
+    def fail(**kwargs):
+        calls.append(1)
+        raise questionnaire.errors.APIError(status, {"error": {"message": "secret"}})
+
+    monkeypatch.setattr(
+        questionnaire.genai,
+        "Client",
+        lambda **kwargs: SimpleNamespace(models=SimpleNamespace(generate_content=fail)),
+    )
+    with pytest.raises(ProcessingError) as exc:
+        questionnaire.extract_questionnaire("document")
+    assert exc.value.code == expected
+    assert len(calls) == attempts
+    assert "secret" not in str(exc.value)
