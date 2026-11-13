@@ -49,4 +49,16 @@ describe('procesamiento', () => {
     await waitFor(() => expect(revokeUrl).toHaveBeenCalledWith('blob:test'))
     vi.unstubAllGlobals()
   })
+
+  it('advierte cuando no se localizan enunciados', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'X-Unmatched-Statements': '2' }),
+      json: async () => ({ titulo: 'Ejemplo', idioma: 'es', total_items: 2, items: [] }),
+    } as Response)
+    render(<App />)
+    fireEvent.change(screen.getByLabelText(/Archivo PDF/), { target: { files: [new File(['test'], 'ejemplo.docx')] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Procesar documento' }))
+    expect(await screen.findByText(/No se pudieron localizar literalmente 2 enunciados/)).toBeInTheDocument()
+  })
 })

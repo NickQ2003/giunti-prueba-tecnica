@@ -6,7 +6,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function processFile(file: File): Promise<Questionnaire> {
+export async function processFile(file: File): Promise<{ questionnaire: Questionnaire; unmatchedStatements: number }> {
   const body = new FormData()
   body.append('file', file)
   const response = await fetch('/api/process', { method: 'POST', body })
@@ -15,5 +15,6 @@ export async function processFile(file: File): Promise<Questionnaire> {
     const requestId = data?.error?.request_id || response.headers?.get('X-Request-ID') || null
     throw new ApiError(data?.error?.mensaje || 'No fue posible procesar el archivo.', requestId)
   }
-  return data as Questionnaire
+  const unmatched = Number(response.headers?.get('X-Unmatched-Statements') ?? 0)
+  return { questionnaire: data as Questionnaire, unmatchedStatements: Number.isSafeInteger(unmatched) && unmatched > 0 ? unmatched : 0 }
 }
