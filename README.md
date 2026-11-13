@@ -2,7 +2,9 @@
 
 Aplicación para transformar cuestionarios en PDF, DOCX o XLSX en JSON estructurado. React presenta el formulario y FastAPI extrae el texto, consulta Gemini y valida el resultado con Pydantic. El servicio no utiliza base de datos ni guarda los documentos de forma permanente.
 
-**URL de producción:** pendiente de configurar y verificar. El repositorio incluye configuración para Render, pero no implica que ya exista un servicio desplegado.
+**Aplicación pública:** [https://giunti-questionnaires.onrender.com/](https://giunti-questionnaires.onrender.com/).
+
+Render Free suspende el servicio después de un periodo de inactividad; la primera carga puede tardar aproximadamente un minuto mientras vuelve a iniciarse.
 
 ## Privacidad y alcance
 
@@ -103,6 +105,6 @@ Para preparar Render:
 2. Configurar `GEMINI_API_KEY` en el servicio y, opcionalmente, `GEMINI_MODEL`. No introducir la clave en el repositorio.
 3. Desactivar el auto-deploy por push y guardar el deploy hook de Render como secreto de GitHub Actions llamado `RENDER_DEPLOY_HOOK`.
 4. Tras un CI exitoso de un push a `main`, el workflow de deploy solicita a Render el commit validado. Sin hook configurado, muestra una advertencia y omite el deploy. La aceptación del hook **no confirma** que el despliegue haya finalizado: revisar Render y probar la URL pública, la carga y la descarga.
-5. Actualizar arriba la URL de producción una vez verificada.
+5. Comprobar que la URL pública documentada arriba siga funcionando después de cada despliegue.
 
 La disponibilidad, cuotas, arranque y condiciones del plan gratuito dependen de la plataforma. El workflow evita desplegar un CI anterior al `main` observado, aunque puede haber carreras con nuevos pushes; el hook fija el SHA validado, pero la plataforma reconstruye la imagen y no reutiliza la imagen probada en CI.
