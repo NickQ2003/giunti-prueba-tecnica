@@ -24,7 +24,8 @@ jobs:
     steps:
       - name: Skip when hosting is not configured
         if: env.RENDER_DEPLOY_HOOK == ''
-        run: echo '::warning::Deploy omitido: configura RENDER_DEPLOY_HOOK.'
+        run: |
+          echo '::warning::Deploy omitido: configura RENDER_DEPLOY_HOOK.'
       - name: Trigger Render deploy for current main
         if: env.RENDER_DEPLOY_HOOK != ''
         run: |
