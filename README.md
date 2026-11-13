@@ -82,6 +82,8 @@ Las respuestas se validan para detectar números y valores de alternativas dupli
 
 La cabecera `X-Unmatched-Statements` cuenta enunciados que no se pudieron localizar en el texto extraído tras normalizar espacios y puntuación. Es una advertencia conservadora, no una verificación de veracidad: el formato puede causar falsos positivos y una coincidencia tampoco demuestra que la extracción sea correcta. La interfaz muestra el aviso sin modificar el JSON.
 
+Antes de consultar Gemini se calculan pistas de español, inglés e italiano con expresiones regulares sobre palabras y terminaciones frecuentes. Se limita la influencia de repeticiones y, si la evidencia es escasa o ambigua, se usa `und`. Las puntuaciones son heurísticas, **no probabilidades calibradas**; se envían como contexto orientativo, no como una instrucción obligatoria. El modelo conserva la decisión final. Las cabeceras `X-Language-Hint` y `X-Language-Disagreement` permiten advertir discrepancias sin modificar el JSON: coincidir tampoco confirma el idioma, especialmente porque el modelo recibe la pista. Documentos cortos, mixtos o en otros idiomas pueden producir señales incorrectas; se recomienda revisión humana.
+
 ## Tests y calidad
 
 ```bash
