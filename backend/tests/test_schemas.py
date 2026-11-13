@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import Questionnaire
+from app.schemas import Item, Questionnaire
 
 
 def test_total_is_calculated_and_answer_can_be_null():
@@ -74,3 +74,30 @@ def test_open_ended_rejects_alternatives():
     }
     with pytest.raises(ValidationError):
         Questionnaire(titulo="Ejemplo", idioma="es", items=[item])
+
+
+def test_italian_statement_key_normalizes_to_canonical_output():
+    item = Item.model_validate(
+        {
+            "numero": 1,
+            "enunciato": "Le istruzioni sono chiare.",
+            "tipo": "desarrollo",
+            "alternativas": [],
+        }
+    )
+    assert item.enunciado == "Le istruzioni sono chiare."
+    assert "enunciado" in item.model_dump()
+    assert "enunciato" not in item.model_dump()
+
+
+def test_conflicting_statement_keys_are_not_silently_chosen():
+    with pytest.raises(ValidationError):
+        Item.model_validate(
+            {
+                "numero": 1,
+                "enunciado": "Original",
+                "enunciato": "Distinto",
+                "tipo": "desarrollo",
+                "alternativas": [],
+            }
+        )

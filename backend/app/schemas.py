@@ -43,6 +43,17 @@ class Item(BaseModel):
     alternativas: list[Alternative] = Field(max_length=100)
     respuesta_correcta: Value | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def accept_italian_statement_key(cls, data):
+        if not isinstance(data, dict) or "enunciato" not in data:
+            return data
+        if "enunciado" in data and data["enunciado"] != data["enunciato"]:
+            raise ValueError("conflicting statement fields")
+        if "enunciado" not in data:
+            return {**data, "enunciado": data["enunciato"]}
+        return data
+
     @model_validator(mode="after")
     def check_alternatives(self):
         values = [
