@@ -23,7 +23,7 @@ Las escalas de frecuencia pueden confundirse con selección múltiple; las clave
 
 ## Referencia de una ejecución real
 
-En una ejecución local con Gemini, los archivos en inglés, español y los dos bilingües devolvieron ocho ítems. El DOCX italiano devolvió `502 / llm_invalid_schema`; la estructura y las tablas del documento son intencionadamente más exigentes. En esa misma ejecución, el XLSX italiano-inglés clasificó algunas escalas como selección múltiple. Estos resultados **no son salidas esperadas garantizadas**: el modelo, la cuota y sus respuestas pueden variar entre ejecuciones. Los ejemplos no sustituyen la revisión humana.
+En una ejecución local con Gemini, los archivos en inglés, español y los dos bilingües devolvieron ocho ítems. Inicialmente, el DOCX italiano devolvió `502 / llm_invalid_schema` porque el proveedor tradujo la clave `enunciado` a `enunciato`. Tras añadir una normalización limitada y reforzar las instrucciones, una nueva prueba devolvió sus ocho ítems; no se garantiza que futuras llamadas siempre tengan éxito. En la primera ejecución, el XLSX italiano-inglés clasificó algunas escalas como selección múltiple. Estos resultados **no son salidas esperadas garantizadas**: el modelo, la cuota y sus respuestas pueden variar entre ejecuciones. Los ejemplos no sustituyen la revisión humana.
 
 ## Regenerar archivos
 
