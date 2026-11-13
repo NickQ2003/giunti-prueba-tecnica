@@ -1,0 +1,21 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #1d2939; background: #f3f6fa; line-height: 1.5; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.container { max-width: 900px; margin: 0 auto; padding: 3rem 1.25rem; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; margin: .5rem 0 1rem; color: #102a43; }
+h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+.eyebrow { color: #176b87; font-size: .8rem; font-weight: 700; letter-spacing: .1em; }
+header { margin-bottom: 2rem; }
+.card { background: white; border: 1px solid #dce5ee; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 16px #102a430a; }
+.notice { background: #eff7fb; border-left: 4px solid #2684a5; padding: 1rem; }
+label { display: block; font-weight: 600; margin: 1.25rem 0 .5rem; }
+label span, .hint { color: #526579; font-size: .9rem; font-weight: 400; }
+input { display: block; width: 100%; padding: .8rem; border: 1px solid #9aabba; border-radius: 6px; }
+button { background: #14627c; color: white; border: 0; border-radius: 6px; padding: .75rem 1.2rem; font: inherit; font-weight: 600; cursor: pointer; }
+button:hover:not(:disabled) { background: #0d485d; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+:focus-visible { outline: 3px solid #e69c24; outline-offset: 3px; }
+.error { color: #9c2525; background: #fff0ef; padding: .8rem; }
+.result-header { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.result-header p { margin: 0; }
+pre { background: #102a43; color: #f2f7fb; padding: 1rem; border-radius: 8px; overflow: auto; max-height: 600px; font-size: .85rem; }
