@@ -17,6 +17,7 @@ from app.errors import ProcessingError
 from app.schemas import Questionnaire
 from app.services.extraction import extract_text
 from app.services.file_validation import read_upload
+from app.services.language_hint import analyze_language
 from app.services.questionnaire import extract_questionnaire
 from app.services.rate_limit import RateLimiter
 from app.services.source_check import count_unmatched_statements
@@ -133,6 +134,11 @@ async def process(request: Request, response: Response, file: UploadFile = File(
         text = await run_in_threadpool(extract_text, extension, content)
         request.state.stage = "llm_processing"
         questionnaire = await run_in_threadpool(extract_questionnaire, text)
+        language_hint = analyze_language(text).candidate
+        response.headers["X-Language-Hint"] = language_hint
+        response.headers["X-Language-Disagreement"] = str(
+            language_hint != "und" and language_hint != questionnaire.idioma
+        ).lower()
         response.headers["X-Unmatched-Statements"] = str(
             count_unmatched_statements(text, questionnaire)
         )

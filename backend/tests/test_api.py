@@ -69,6 +69,47 @@ def test_missing_file_has_consistent_error():
     assert response.headers["X-Request-ID"] == response.json()["error"]["request_id"]
 
 
+def test_language_disagreement_is_an_advisory_header(monkeypatch):
+    document = Document()
+    document.add_paragraph(
+        "Las personas describen la preocupación y la evaluación de su bienestar."
+    )
+    stream = BytesIO()
+    document.save(stream)
+    result = Questionnaire.model_validate(
+        {
+            "titulo": "Example",
+            "idioma": "en",
+            "items": [
+                {"numero": 1, "enunciado": "Pregunta", "tipo": "desarrollo", "alternativas": []}
+            ],
+        }
+    )
+    monkeypatch.setattr("app.main.extract_questionnaire", lambda text: result)
+    response = client.post("/api/process", files={"file": ("example.docx", stream.getvalue())})
+    assert response.status_code == 200
+    assert response.headers["X-Language-Hint"] == "es"
+    assert response.headers["X-Language-Disagreement"] == "true"
+    assert response.json()["idioma"] == "en"
+
+
+def test_unknown_language_hint_does_not_claim_disagreement(monkeypatch):
+    result = Questionnaire.model_validate(
+        {
+            "titulo": "Example",
+            "idioma": "en",
+            "items": [
+                {"numero": 1, "enunciado": "Pregunta", "tipo": "desarrollo", "alternativas": []}
+            ],
+        }
+    )
+    monkeypatch.setattr("app.main.extract_questionnaire", lambda text: result)
+    response = client.post("/api/process", files={"file": ("example.docx", document_bytes())})
+    assert response.status_code == 200
+    assert response.headers["X-Language-Hint"] == "und"
+    assert response.headers["X-Language-Disagreement"] == "false"
+
+
 def test_unexpected_exception_does_not_leak_content(monkeypatch, caplog):
     def fail(text):
         raise RuntimeError("secret document text")
